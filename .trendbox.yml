@@ -1,0 +1,20 @@
+---
+language: node_js
+
+sandbox:
+  vault:
+    group: DMTRMONAKHOV_SANDBOX_GROUP
+
+# test-string
+env: SANDBOX_PRIVILEGED_CONTAINER=true AVOCADO_VERSION=61.0
+
+before_script: sudo service docker start
+script:
+  - docker login -u dmtrmonakhov -p $REGISTRY_OAUTH registry.yandex.net
+  - docker build --network=host -t avocado-alpine:test Dockerfile.alpine .
+  - docker tag avocado-alpine:test dmtrmonakhov/avocado-alpine:$AVOCADO_VERSION
+  - docker tag avocado-alpine:test dmtrmonakhov/avocado-alpine:latest
+  - docker push dmtrmonakhov/avocado-alpine:$AVOCADO_VERSION
+  - docker push dmtrmonakhov/avocado-alpine:latest
+
+after_script: sudo service docker stop
