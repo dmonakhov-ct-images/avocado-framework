@@ -2,18 +2,24 @@
 import argparse
 import sys
 from junitparser import JUnitXml, TestSuite
-
+from pathlib import Path
 
 def process_ts(ts, add_list, clean_list, clean_all=False):
-    l = list(ts.properties())
-    for p in l:
-        if clean_all or p in clean_list:
-            ts.remove_property(p)
+    add = []
     for p in add_list:
         try:
             k,v = p.split('=')
         except TypeError:
             sys.exit("Bad k,v option in add_list: '%s'" % p)
+        clean_list.append(k)
+        add.append((k,v))
+
+    l = list(ts.properties())
+    for p in l:
+        if clean_all or p.name in clean_list:
+            ts.remove_property(p)
+
+    for k,v in add:
         ts.add_property(k, v)
 
 
@@ -35,12 +41,29 @@ def process_file(infile, outfile, add_list, clean_list, clean_all=False):
 
 def main(in_args):
     parser = argparse.ArgumentParser()
-    parser.add_argument('input_file', help='input xUnit result file')
-    parser.add_argument('output_file', help='output xUnit result file')
+    parser.add_argument('input_file', help='input xUnit result file', nargs='?')
+    parser.add_argument('output_file', help='output xUnit result file', nargs='?')
+    parser.add_argument('-p', '--file-patern', dest='file_pattern', type=str, help='Find and process all files with pattern, example: "**/.xml"')
+    parser.add_argument('-D', '--dir', dest='dir_path', type=str, default='.', help='directory to lookup files, used with --file-patern')
     parser.add_argument('-a', '--add', dest='add_list', default=[], action='append', help='Add k,v property, example: "-a key=val"')
     parser.add_argument('-d', '--del', dest='clean_list', default=[], action='append', help='delete propery')
     parser.add_argument('-c', '--clean-all', dest='clean_all', action='store_true', help='Clear all old properties')
     args = parser.parse_args(in_args)
+
+    if args.file_pattern:
+        f_list = Path(args.dir_path).glob(args.file_pattern)
+        for f in list(f_list):
+            fname=str(f.resolve())
+            process_file(fname, fname, args.add_list, args.clean_list, args.clean_all)
+        return
+
+    if not args.input_file:
+        print("Input file, or file pattern is required")
+        parser.print_help()
+        sys.exit(0)
+
+    if not args.output_file:
+        args.output_file = args.input_file
 
     process_file(args.input_file, args.output_file, args.add_list, args.clean_list, args.clean_all)
 
