@@ -1,0 +1,49 @@
+#!/usr/bin/env python
+import argparse
+import sys
+from junitparser import JUnitXml, TestSuite
+
+
+def process_ts(ts, add_list, clean_list, clean_all=False):
+    l = list(ts.properties())
+    for p in l:
+        if clean_all or p in clean_list:
+            ts.remove_property(p)
+    for p in add_list:
+        try:
+            k,v = p.split('=')
+        except TypeError:
+            sys.exit("Bad k,v option in add_list: '%s'" % p)
+        ts.add_property(k, v)
+
+
+def process_file(infile, outfile, add_list, clean_list, clean_all=False):
+    try:
+        xml = JUnitXml.fromfile(infile)
+    except IOError as e:
+        sys.exit("Couldn't open %s: %s" % (infile, e[1]))
+    if type(xml) == TestSuite:
+        process_ts(xml, add_list, clean_list, clean_all)
+    else:
+        for ts in xml:
+            process_ts(ts, add_list, clean_list, clean_all)
+
+    #xml.write(outfile, pretty=True)
+    xml.write(outfile)
+
+
+
+def main(in_args):
+    parser = argparse.ArgumentParser()
+    parser.add_argument('input_file', help='input xUnit result file')
+    parser.add_argument('output_file', help='output xUnit result file')
+    parser.add_argument('-a', '--add', dest='add_list', default=[], action='append', help='Add k,v property, example: "-a key=val"')
+    parser.add_argument('-d', '--del', dest='clean_list', default=[], action='append', help='delete propery')
+    parser.add_argument('-c', '--clean-all', dest='clean_all', action='store_true', help='Clear all old properties')
+    args = parser.parse_args(in_args)
+
+    process_file(args.input_file, args.output_file, args.add_list, args.clean_list, args.clean_all)
+
+
+if __name__ == '__main__':
+    main(sys.argv[1:])

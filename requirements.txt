@@ -1,3 +1,6 @@
 avocado-framework
+avocado-framework-plugin-golang
 avocado-framework-plugin-result-html
 avocado-framework-plugin-varianter-yaml-to-mux
+# Required for xunit_mod_property
+junitparser
