@@ -1,5 +1,4 @@
 FROM python:alpine
 
 COPY requirements.txt /tmp/avocado-packets.txt
-
 RUN pip install -r /tmp/avocado-packets.txt && unlink /tmp/avocado-packets.txt
